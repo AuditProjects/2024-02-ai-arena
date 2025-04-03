@@ -90,6 +90,7 @@ contract Neuron is ERC20, AccessControl {
     /// @notice Adds a new address to the minter role.
     /// @dev Only the owner address is authorized to call this function.
     /// @param newMinterAddress The address to be added as a minter
+    // @report-m2 minter, staker, spender无法被撤销，参看 openzeppin
     function addMinter(address newMinterAddress) external {
         require(msg.sender == _ownerAddress);
         _setupRole(MINTER_ROLE, newMinterAddress);

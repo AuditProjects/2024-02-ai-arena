@@ -155,6 +155,7 @@ contract GameItems is ERC1155 {
                 quantity <= allGameItemAttributes[tokenId].itemsRemaining
             )
         );
+        // @report-m9 缺少检查，铸造限制容易被绕过
         require(
             dailyAllowanceReplenishTime[msg.sender][tokenId] <= block.timestamp || 
             quantity <= allowanceRemaining[msg.sender][tokenId]
@@ -184,6 +185,7 @@ contract GameItems is ERC1155 {
     /// @param newBurningAddress The address to allow for burning.
     function setAllowedBurningAddresses(address newBurningAddress) public {
         require(isAdmin[msg.sender]);
+        // @report-m8 仅能由admin 更新
         allowedBurningAddresses[newBurningAddress] = true;
     }
 
@@ -288,6 +290,7 @@ contract GameItems is ERC1155 {
 
     /// @notice Safely transfers an NFT from one address to another.
     /// @dev Added a check to see if the game item is transferable.
+    // @report-h2 重写safeTransferFrom这个正确，但是忽略的safeBatchTransferFrom仍可以绕过
     function safeTransferFrom(
         address from, 
         address to, 

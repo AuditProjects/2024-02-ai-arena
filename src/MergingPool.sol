@@ -137,7 +137,7 @@ contract MergingPool {
     /// @param modelTypes The array of model types corresponding to each round and winner address.
     /// @param customAttributes Array with [element, weight] of the newly created fighter.
     function claimRewards(
-        string[] calldata modelURIs, 
+        string[] calldata modelURIs,  // @report-m3 用户可以指定任意属性，与 docs 理念不符
         string[] calldata modelTypes,
         uint256[2][] calldata customAttributes
     ) 
@@ -145,12 +145,14 @@ contract MergingPool {
     {
         uint256 winnersLength;
         uint32 claimIndex = 0;
+        // @report-m4 DoS, 后面用户 gas逐渐变昂贵
         uint32 lowerBound = numRoundsClaimed[msg.sender];
         for (uint32 currentRound = lowerBound; currentRound < roundId; currentRound++) {
             numRoundsClaimed[msg.sender] += 1;
             winnersLength = winnerAddresses[currentRound].length;
             for (uint32 j = 0; j < winnersLength; j++) {
                 if (msg.sender == winnerAddresses[currentRound][j]) {
+                    // @report-h8 重入，下面包含 _safeMint（前面没有做任何 check）
                     _fighterFarmInstance.mintFromMergingPool(
                         msg.sender,
                         modelURIs[claimIndex],

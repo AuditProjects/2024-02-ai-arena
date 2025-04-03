@@ -104,6 +104,8 @@ contract AiArenaHelper {
                 ) {
                     finalAttributeProbabilityIndexes[i] = 50;
                 } else {
+                    // @report-m1 随机性计算问题
+                    // @report-m7 某条件下计算问题
                     uint256 rarityRank = (dna / attributeToDnaDivisor[attributes[i]]) % 100;
                     uint256 attributeIndex = dnaToIndex(generation, rarityRank, attributes[i]);
                     finalAttributeProbabilityIndexes[i] = attributeIndex;

@@ -107,6 +107,7 @@ contract FighterFarm is ERC721, ERC721Enumerable {
         _ownerAddress = ownerAddress;
         _delegatedAddress = delegatedAddress;
         treasuryAddress = treasuryAddress_;
+        // @report-h7 只初始化了 index0
         numElements[0] = 3;
     } 
 
@@ -251,7 +252,7 @@ contract FighterFarm is ERC721, ERC721Enumerable {
             _mintpassInstance.burn(mintpassIdsToBurn[i]);
             _createNewFighter(
                 msg.sender, 
-                uint256(keccak256(abi.encode(mintPassDnas[i]))), 
+                uint256(keccak256(abi.encode(mintPassDnas[i]))),  // @report-h3 fighterTypes 可以传入1个，复制之前数据产生稀缺dna
                 modelHashes[i], 
                 modelTypes[i],
                 fighterTypes[i],
@@ -342,7 +343,8 @@ contract FighterFarm is ERC721, ERC721Enumerable {
     ) 
         public 
         override(ERC721, IERC721)
-    {
+    {   
+        // @report-h1 由于继承 ERC721, 自有transferFrom能绕开该条件
         require(_ableToTransfer(tokenId, to));
         _transfer(from, to, tokenId);
     }
@@ -367,10 +369,11 @@ contract FighterFarm is ERC721, ERC721Enumerable {
     /// @notice Rolls a new fighter with random traits.
     /// @param tokenId ID of the fighter being re-rolled.
     /// @param fighterType The fighter type.
-    function reRoll(uint8 tokenId, uint8 fighterType) public {
+    function reRoll(uint8 tokenId, uint8 fighterType) public { // @report-h6  uint8导致有toke nid大于 255 的人无法执行
         require(msg.sender == ownerOf(tokenId));
         require(numRerolls[tokenId] < maxRerollsAllowed[fighterType]);
         require(_neuronInstance.balanceOf(msg.sender) >= rerollCost, "Not enough NRN for reroll");
+        // @report-h4 未检查 fighterType 是否是该 tokenId 的
 
         _neuronInstance.approveSpender(msg.sender, rerollCost);
         bool success = _neuronInstance.transferFrom(msg.sender, treasuryAddress, rerollCost);
@@ -466,8 +469,8 @@ contract FighterFarm is ERC721, ERC721Enumerable {
         private 
         view 
         returns (uint256, uint256, uint256) 
-    {
-        uint256 element = dna % numElements[generation[fighterType]];
+    {   
+        uint256 element = dna % numElements[generation[fighterType]]; // @report-h7  执行到非index0，则会 revert
         uint256 weight = dna % 31 + 65;
         uint256 newDna = fighterType == 0 ? dna : uint256(fighterType);
         return (element, weight, newDna);
@@ -507,6 +510,7 @@ contract FighterFarm is ERC721, ERC721Enumerable {
         uint256 newId = fighters.length;
 
         bool dendroidBool = fighterType == 1;
+        // @report-m5 用户可以使用合约钱包不断铸造直到满意，不满意则 revert
         FighterOps.FighterPhysicalAttributes memory attrs = _aiArenaHelperInstance.createPhysicalAttributes(
             newDna,
             generation[fighterType],

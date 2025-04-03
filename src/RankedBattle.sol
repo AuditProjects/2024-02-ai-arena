@@ -295,6 +295,7 @@ contract RankedBattle {
         require(numRoundsClaimed[msg.sender] < roundId, "Already claimed NRNs for this period");
         uint256 claimableNRN = 0;
         uint256 nrnDistribution;
+        // @report-m4 DoS 
         uint32 lowerBound = numRoundsClaimed[msg.sender];
         for (uint32 currentRound = lowerBound; currentRound < roundId; currentRound++) {
             nrnDistribution = getNrnDistribution(currentRound);
@@ -436,6 +437,8 @@ contract RankedBattle {
         }
 
         /// Potential amount of NRNs to put at risk or retrieve from the stake-at-risk contract
+        // @report-h5 向下取整
+        // @report-m6 StakeAtRisk逻辑问题
         curStakeAtRisk = (bpsLostPerLoss * (amountStaked[tokenId] + stakeAtRisk)) / 10**4;
         if (battleResult == 0) {
             /// If the user won the match
@@ -473,6 +476,7 @@ contract RankedBattle {
             /// If the user lost the match
 
             /// Do not allow users to lose more NRNs than they have in their staking pool
+            // @report-m6 
             if (curStakeAtRisk > amountStaked[tokenId]) {
                 curStakeAtRisk = amountStaked[tokenId];
             }
@@ -527,6 +531,8 @@ contract RankedBattle {
       uint256 stakingFactor_ = FixedPointMathLib.sqrt(
           (amountStaked[tokenId] + stakeAtRisk) / 10**18
       );
+
+      // @report-h5 向上取整，玩家即使只质押 1 wei NRN, 仍然能获得积分奖励(逻辑设计问题)
       if (stakingFactor_ == 0) {
         stakingFactor_ = 1;
       }
